@@ -23,6 +23,8 @@ public:
 
     void setExcludepattern(const char* exclude_pattern);
 
+    void setMoveDirectory(const char* move_directory);
+
     void setCtime(const long ctime);
 
     void setAtime(const long atime);
@@ -41,20 +43,22 @@ public:
 
     void setTest();
 
-    // int setVerbose();
-
-    void setMovemodule();
-
     int setAll();
-private:
 
+private:
+    int handlewith(const char* file_path, const char* file_name);
+
+    inline int isExcludeFileType(unsigned char d_type);
+
+    int raletiveLayerNum(const char* base_path, const char* file_path);
 private:
     MiniLog::shared logger_ = nullptr;
 
     std::string *scan_directory_ = nullptr;
-    std::string *exclude_path_ = nullptr;
-    std::string *file_type_ = nullptr;
+    std::vector<const char*> *exclude_path_ = nullptr;
+    unsigned char* file_type_ = nullptr;
     std::string *exclude_pattern_ = nullptr;
+    std::string *move_directory_ = nullptr;
     long ctime_ = 0;
     long atime_ = 0;
     long mtime_ = 0;
@@ -65,12 +69,13 @@ private:
     bool force_ = false;
     bool quite_ = false;
     bool test_ = false;
-    // bool verbose_ = false;
-    bool move_module_ = false;
     bool all_ = false;
 
     std::vector<std::string*> *transferred_files_;
 };
+
+
+
 
 
 #endif
