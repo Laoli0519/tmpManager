@@ -1,0 +1,3 @@
+[submodule "third/minilogger"]
+	path = third/minilogger
+	url = https://github.com/Laoli0519/Minilogger.git
