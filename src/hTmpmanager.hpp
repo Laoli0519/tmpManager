@@ -46,11 +46,15 @@ public:
     int setAll();
 
 private:
-    int handlewith(const char* file_path, const char* file_name);
+    inline int handlewith(const char* file_path, const char* file_name);
 
     inline int isExcludeFileType(unsigned char d_type);
 
-    int raletiveLayerNum(const char* base_path, const char* file_path);
+    inline int raletiveLayerNum(const char* base_path, const char* file_path);
+
+    inline void customPathFormat(std::string& path);
+
+    inline int isExcludeFileDir(const char* file_dir);
 private:
     MiniLog::shared logger_ = nullptr;
 
@@ -67,11 +71,12 @@ private:
 
     bool nodirs_ = false;
     bool force_ = false;
-    bool quite_ = false;
+    // bool quite_ = false;
     bool test_ = false;
     bool all_ = false;
 
     std::vector<std::string*> *transferred_files_;
+    std::vector<const char*> *sub_dir_stack_;
 };
 
 
