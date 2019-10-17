@@ -63,6 +63,8 @@ private:
     unsigned char* file_type_ = nullptr;
     std::string *exclude_pattern_ = nullptr;
     std::string *move_directory_ = nullptr;
+    std::vector<const char*> *sub_dir_stack_;
+
     long ctime_ = 0;
     long atime_ = 0;
     long mtime_ = 0;
@@ -75,8 +77,7 @@ private:
     bool test_ = false;
     bool all_ = false;
 
-    std::vector<std::string*> *transferred_files_;
-    std::vector<const char*> *sub_dir_stack_;
+    // std::vector<std::string*> *transferred_files_;
 };
 
 

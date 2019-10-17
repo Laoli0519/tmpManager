@@ -2,66 +2,45 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <algorithm>
-#include <string.h>
-// #include <error.h>
 #include <errno.h>
 #include <time.h>
 #include "hTmpmanager.hpp"
 
 
-
-class mpManager {
-private:
-
-private:
-    MiniLog::shared logger_ = nullptr;
-
-    std::string *scan_directory = nullptr;
-    std::string *exclude_path = nullptr;
-    std::string *file_type = nullptr;
-    std::string *exclude_pattern = nullptr;
-    long ctime = 0;
-    long atime = 0;
-    long mtime = 0;
-    long dir_mtime = 0;
-    int max_depth = 0;
-
-    bool nodirs = false;
-    bool force = false;
-    bool quite = false;
-    bool test = false;
-    bool verbose = false;
-    bool move_module = false;
-    bool all = false;
-};
-
-
 tmpManager::tmpManager(const char* name) {
-    transferred_files_ = new std::vector<std::string*>;
+    // transferred_files_ = new std::vector<std::string*>;
     sub_dir_stack_ = new std::vector<const char*>;
     sub_dir_stack_->clear();
     logger_ = MiniLog::GetLog(name, MiniLog::log_level_debug);
 }
 
 tmpManager::~tmpManager() {
-    if(transferred_files_ != nullptr) {
-        delete transferred_files_;
+    // if(transferred_files_ != nullptr) {
+    //     delete transferred_files_;
+    // }
+    
+    if (sub_dir_stack_ != nullptr) {
+        delete sub_dir_stack_;
+        sub_dir_stack_ = nullptr;
     }
-
     if(scan_directory_ != nullptr) {
         delete scan_directory_;
+        scan_directory_ = nullptr;
     }
 
     if(exclude_path_ != nullptr) {
         delete exclude_path_;
+        exclude_path_ = nullptr;
     }
 
     if(file_type_ != nullptr) {
         delete file_type_;
+        file_type_ = nullptr;
     }
 
     if(exclude_pattern_ != nullptr) {
         delete exclude_pattern_;
+        exclude_path_ = nullptr;
     }
 }
 
@@ -119,6 +98,7 @@ int tmpManager::run() {
             lstat(file_path.c_str(), &scan_dir_stat);
             if (0 == strcmp(dirptr->d_name, ".") || 
                 0 == strcmp(dirptr->d_name, "..") ||
+                //TODO      dir_time
                 scan_dir_stat.st_atim.tv_sec > start_time - atime_ ||
                 scan_dir_stat.st_ctim.tv_sec > start_time - ctime_ ||
                 scan_dir_stat.st_mtim.tv_sec > start_time - mtime_ ||
