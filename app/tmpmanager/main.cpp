@@ -32,6 +32,7 @@ static const struct option long_options[] = {
 };
 
 void usage() {
+    printf("tmpManager    version 0.2-alpha");
     printf("Usage : \n");
     printf("\t-h  --help              :  help information\n");
     printf("\t-d  --directory x       :  scan the specified path file\n");
