@@ -184,7 +184,7 @@ int tmpManager::run() {
         mtime_ = start_time;
     }
 
-#ifdef DEBUG_DUMP
+#if DEBUG_DUMP
     logger_->setLogLevel(MiniLog::log_level_debug);
     dump();
 #endif

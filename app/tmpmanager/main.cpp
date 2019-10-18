@@ -2,7 +2,7 @@
 #include <getopt.h>
 #include <string.h>
 
-#define DEBUG_DUMP
+#define DEBUG_DUMP 0
 
 #include "minilogger.h"
 #include "hTmpmanager.hpp"
@@ -62,7 +62,7 @@ int cmdParse(int argc, char* argv[], tmpManager *tmp_manager) {
     const char* short_options = "hd:c:m:u:aifqtx:t:y:o:U:e:";
     
     while((opt = getopt_long(argc, argv, short_options, long_options, &option_index)) != -1 && 0 == ret) {  
-#ifdef DEBUG_DUMP 
+#if DEBUG_DUMP 
         printf("opt = %c\t\t", opt);
         printf("optarg = %s\t\t",optarg);
         printf("optind = %d\t\t",optind);
