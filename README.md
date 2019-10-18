@@ -9,7 +9,8 @@ cd tmpManager && mkdir build && cd build && cmake .. && make
 
 ## Usage
 ```
-tmpManager    version 0.2-alphaUsage : 
+tmpManager    version 0.2-alpha
+Usage : 
 	-h  --help              :  help information
 	-d  --directory x       :  scan the specified path file
 	-c  --ctime x           :  base on file build time [/second]
