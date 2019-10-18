@@ -1,5 +1,6 @@
 #include <unistd.h>
 #include <getopt.h>
+#include <string.h>
 #include "minilogger.h"
 #include "hTmpmanager.hpp"
 
@@ -18,11 +19,12 @@ static const struct option long_options[] = {
         {"force",  no_argument,      NULL, 'f'},                //force
         {"quite",  no_argument,      NULL, 'q'},                //report error message only 
         {"test",  no_argument,      NULL, 't'},                 //test
-        {"verbose",  no_argument,      NULL, 'v'},              //report full message 
+        // {"verbose",  no_argument,      NULL, 'v'},              //report full message 
         {"exclude-path",  required_argument,      NULL, 'x'},         //exclude the specified path file
-        {"exclude-pattern",  required_argument,      NULL, 'X'},      //exclude the specified pattern file
+        // {"exclude-pattern",  required_argument,      NULL, 'X'},      //exclude the specified pattern file
         {"file-type",  required_argument,      NULL, 'y'},            //scan the specified file-type
         {"move-mod",  no_argument,      NULL, 'o'},                   //move file only, not delete one
+        {"exclude-user",  required_argument,      NULL, 'U'},            //exclude the specified user file
         {"max-depth",  required_argument,      NULL, 'e'},            //recursive maximum number of layers
         {NULL,     0,                NULL,  0}
 };
@@ -40,11 +42,12 @@ void usage() {
     printf("\t-f  --force             :  force operate\n");
     printf("\t-q  --quite             :  report error message only \n");
     printf("\t-t  --test              :  test module\n");
-    printf("\t-v  --verbose           :  report full message \n");
+    // printf("\t-v  --verbose           :  report full message \n");
     printf("\t-x  --exclude-path=x    :  exclude the specified path file\n");
     //printf("\t-X: --exclude-pattern=x :  exclude the specified pattern file [Regular expression]\n");
     printf("\t-y: --file-type=x       :  scan the specified file-type  [file-type:-|d|l|s|b|c|p]\n");
     printf("\t-o: --move-mod          :  file only, not delete one\n");
+    printf("\t-U: --exclude-user      :  exclude the specified user file\n");
     printf("\t-e: --max-depth=x       :  recursive maximum number of layers\n\n");
 
 }
@@ -69,35 +72,64 @@ int cmdParse(int argc, char* argv[], tmpManager *tmp_manager) {
                 ret = -1;
                 break;
             case 'd': 
+                tmp_manager->setScanDirectory(optarg);
                 break;
-            case 'c':
+            case 'c': 
+                {
+                    long ctime = atol(optarg);
+                    tmp_manager->setCtime(ctime);
+                }
                 break;
             case 'm':
+                {
+                    long mtime = atol(optarg);
+                    tmp_manager->setMtime(mtime);
+                }
                 break;
             case 'u':
+                {
+                    long atime = atol(optarg);
+                    tmp_manager->setAtime(atime);
+                }
                 break;
             case 'M':
+                {
+                    long dirmtime = atol(optarg);
+                    tmp_manager->setDirmtime(dirmtime);
+                }
                 break;
             case 'a':
+                tmp_manager->setAll();
                 break;
             case 'i':
+                tmp_manager->setNodirs();
                 break;
             case 'f':
+                tmp_manager->setForce();
                 break;
             case 'q':
+                tmp_manager->setQuite();
                 break;
             case 't':
-                break;
-            case 'v':
+                tmp_manager->setTest();
                 break;
             case 'x':
+                tmp_manager->setExcludePath(optarg);
                 break;
             case 'y':
+                tmp_manager->setFileType(optarg);
                 break;
             case 'o':
+                tmp_manager->setMoveDirectory(optarg);
                 break;
             case 'e':
+                {
+                    int max_depth = atoi(optarg);
+                    tmp_manager->setMaxdepth(max_depth);
+                }
                 break;
+            case 'U':
+                tmp_manager->setExcludeusers(optarg);
             case 'X':
             default: 
                 printf("Invalid parameter -- -%c\n", opt);
@@ -109,7 +141,7 @@ int cmdParse(int argc, char* argv[], tmpManager *tmp_manager) {
     return ret;
 }
 
-int cmdRun(int argc, char* argv[]) {
+int Run(int argc, char* argv[]) {
 
     if(argc < 2) {
         usage();
@@ -123,7 +155,7 @@ int cmdRun(int argc, char* argv[]) {
 
 int main(int argc, char* argv[]) {
 
-    cmdRun(argc, argv);
+    Run(argc, argv);
 
     return 0;
 }
