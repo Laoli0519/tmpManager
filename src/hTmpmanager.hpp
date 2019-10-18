@@ -14,6 +14,8 @@
 #include "minilogger.h"
 
 
+
+
 class tmpManager {
 public:
     tmpManager(const char* name);
@@ -28,7 +30,7 @@ public:
 
     void setFileType(const char* file_type);
 
-    void setExcludepattern(const char* exclude_pattern);
+    // void setExcludepattern(const char* exclude_pattern);
 
     void setExcludeusers(const char* exclude_user);
 
@@ -40,7 +42,7 @@ public:
 
     void setMtime(const long mtime);
 
-    void setDirmtime(const long dir_mtime);
+    // void setDirmtime(const long dir_mtime);
 
     void setMaxdepth(const int max_depth);
 
@@ -66,13 +68,15 @@ private:
     inline void customPathFormat(std::string& path);
 
     inline int isExcludeFileDir(const char* file_dir);
+
+    inline void dump();
 private:
     MiniLog::shared logger_ = nullptr;
 
     std::string *scan_directory_ = nullptr;
     std::vector<const char*> *exclude_path_ = nullptr;
     unsigned char* file_type_ = nullptr;
-    std::string *exclude_pattern_ = nullptr;
+    // std::string *exclude_pattern_ = nullptr;
     std::string *move_directory_ = nullptr;
     std::vector<const char*> *exclude_uers_ = nullptr;
     std::vector<const char*> *sub_dir_stack_;
@@ -80,7 +84,6 @@ private:
     long ctime_ = 0;
     long atime_ = 0;
     long mtime_ = 0;
-    long dir_mtime_ = 0;
     int max_depth_ = 0;
 
     bool nodirs_ = false;
@@ -96,11 +99,12 @@ tmpManager::tmpManager(const char* name) {
     // transferred_files_ = new std::vector<std::string*>;
     sub_dir_stack_ = new std::vector<const char*>;
     sub_dir_stack_->clear();
-    logger_ = MiniLog::GetLog(name, MiniLog::log_level_debug);
+    logger_ = MiniLog::GetLog(name, MiniLog::log_level_info);
+    logger_->info("begin scan file");
 }
 
 tmpManager::~tmpManager() {
-    
+    logger_->info("Scan the specified path end");
     if (sub_dir_stack_ != nullptr) {
         delete sub_dir_stack_;
         sub_dir_stack_ = nullptr;
@@ -126,15 +130,43 @@ tmpManager::~tmpManager() {
         file_type_ = nullptr;
     }
 
-    if(exclude_pattern_ != nullptr) {
-        delete exclude_pattern_;
-        exclude_path_ = nullptr;
+    // if(exclude_pattern_ != nullptr) {
+    //     delete exclude_pattern_;
+    //     exclude_path_ = nullptr;
+    // }
+
+    if (move_directory_ != nullptr) {
+        delete move_directory_;
+        move_directory_ = nullptr;
     }
+}
+
+inline void tmpManager::dump() {
+    if(scan_directory_)
+        logger_->debug("scan_directory_ = [{}]", *scan_directory_);
+    if(file_type_)
+        logger_->debug("file_type_ = [{}]", file_type_);
+    if(move_directory_)
+        logger_->debug("move_directory_ = [{}]", *move_directory_);
+    logger_->debug("ctime_ = [{}]", ctime_);
+    logger_->debug("atime_ = [{}]", atime_);
+    logger_->debug("mtime_ = [{}]", mtime_);
+    logger_->debug("max_depth_ = [{}]", max_depth_);
+    logger_->debug("nodirs_ = [{}]", nodirs_);
+    logger_->debug("force_ = [{}]", force_);
+    logger_->debug("test_ = [{}]", test_);
+    logger_->debug("all_ = [{}]", all_);
+    if(exclude_path_)
+        for(auto i : *exclude_path_)
+            logger_->debug("exclude_path_ = [{}]", i);
+    if(exclude_uers_)
+        for( auto i : *exclude_uers_)
+            logger_->debug("exclude_uers_ = [{}]", i);
 }
 
 int tmpManager::run() {
     if(nullptr == scan_directory_) {
-        logger_->error("Lack of necessary parameters");
+        logger_->error("Lack of necessary parameters : [{}]", "scan directory");
         return -1;
     }
 
@@ -151,10 +183,11 @@ int tmpManager::run() {
     if(mtime_ <= 0) {
         mtime_ = start_time;
     }
-    if(dir_mtime_ <= 0) {
-        dir_mtime_ = start_time;
-    }
 
+#ifdef DEBUG_DUMP
+    logger_->setLogLevel(MiniLog::log_level_debug);
+    dump();
+#endif
     lstat(scan_directory_->c_str(), &scan_dir_stat);
 
     if(!S_ISDIR(scan_dir_stat.st_mode)) {
@@ -173,7 +206,7 @@ int tmpManager::run() {
         sub_dir_stack_->pop_back();
 
         if ((dir = opendir(basepath.c_str())) == NULL) {
-            logger_->error("Open {} error", basepath.c_str());
+            logger_->error("failed to open file : [{}], error : [{}]", basepath, strerror(errno));
             continue;
         }
         
@@ -186,24 +219,19 @@ int tmpManager::run() {
 
             lstat(file_path.c_str(), &scan_dir_stat);
             if (0 == strcmp(dirptr->d_name, ".") || 
-                0 == strcmp(dirptr->d_name, "..") ||
-                //TODO      dir_time
-                scan_dir_stat.st_atim.tv_sec > start_time - atime_ ||
+                0 == strcmp(dirptr->d_name, "..") || 
+                (!all_ && 
+                (scan_dir_stat.st_atim.tv_sec > start_time - atime_ ||
                 scan_dir_stat.st_ctim.tv_sec > start_time - ctime_ ||
                 scan_dir_stat.st_mtim.tv_sec > start_time - mtime_ ||
                 0 != isExcludeFileType(dirptr->d_type) ||
-                0 != isExcludeFileDir(file_path.c_str())) {   //current dir OR parrent dir
+                0 != isExcludeFileDir(file_path.c_str()) ) ) ) {   //current dir OR parrent dir
                 continue;
             }
             
             if (dirptr->d_type == DT_DIR && nodirs_) {
-                file_path.insert(file_path.end(), '/');
+                customPathFormat(file_path);
                 if(max_depth_ >= raletiveLayerNum(scan_directory_->c_str(), file_path.c_str())) {   //dir
-                    std::string mkdir_name = assemblyFullpath(move_directory_->c_str(), dirptr->d_name);
-                    if(mkdir(mkdir_name.c_str(), 0755)) {
-                        logger_->error("failed to created directory : {}, error : {}", mkdir_name.c_str(), strerror(errno));
-                        continue;
-                    }
                     sub_dir_stack_->emplace_back(file_path.c_str());
                 }
             }
@@ -227,18 +255,18 @@ void tmpManager::setMtime(const long mtime) {
     mtime_ = mtime;
 }
 
-void tmpManager::setDirmtime(const long dir_mtime) {
-    dir_mtime_ = dir_mtime_;
-}
+// void tmpManager::setDirmtime(const long dir_mtime) {
+//     dir_mtime_ = dir_mtime_;
+// }
 
-void tmpManager::setExcludepattern(const char* exclude_pattern) {
-    if(exclude_pattern_ == nullptr) {
-        exclude_pattern_ = new std::string;
-    }
+// void tmpManager::setExcludepattern(const char* exclude_pattern) {
+//     if(exclude_pattern_ == nullptr) {
+//         exclude_pattern_ = new std::string;
+//     }
 
-    exclude_pattern_->clear();
-    exclude_pattern_->append(exclude_pattern);
-}
+//     exclude_pattern_->clear();
+//     exclude_pattern_->append(exclude_pattern);
+// }
 
 void tmpManager::setExcludePath(const char* exclude_path) {
     if(exclude_path_ == nullptr) {
@@ -309,7 +337,7 @@ void tmpManager::setFileType(const char* file_type) {
             file_type_[i] = DT_FIFO;
             break;
         default:
-            logger_->error("invalid input file type = %c", file_type[i]);
+            logger_->error("invalid input file type = [{}]", file_type[i]);
         }
     }
 }
@@ -359,25 +387,22 @@ void tmpManager::setTest() {
 //file_path : full path (include file name)    /home/root/run.sh
 //file_name : run.sh
 inline int tmpManager::handlewith(const char* file_path, const char* file_name) {    
-    int ret = 0;
-
     //Operate the file
-    logger_->debug("Operate the {} file", file_path);
+    logger_->debug("Operate the file : [{}]", file_path);
+
     if(nullptr != move_directory_) {
-        std::string new_name = *move_directory_ + file_name;
-        ret = rename(file_path, new_name.c_str());
-        if (ret < 0) {
-            logger_->error("Failed to move files : {} -> {}, error : {}", file_path, new_name.c_str(), strerror(errno));
+        std::string new_file = *move_directory_ + file_name;
+        if(!test_ && rename(file_path, new_file.c_str()) < 0) {
+            logger_->error("Failed to move files : [{}] -> [{}], error : [{}]", file_path, new_file, strerror(errno));
             return -1;
         }
-        logger_->info("Successfully moveing file : {} -> {}", file_path, new_name.c_str());
+        logger_->info("Successfully moveing file : [{}] -> [{}]", file_path, new_file);
     } else {
-        ret = remove(file_path);
-        if (ret < 0) {
-            logger_->error("Failed to delete files : {}, error : {}", file_path, strerror(errno));
+        if(!test_ && remove(file_path) < 0) {
+            logger_->error("Failed to delete files : [{}], error : [{}]", file_path, strerror(errno));
             return -1;
         }
-        logger_->info("Successfully deleted file : {}", file_path);
+        logger_->info("Successfully deleted file : [{}]", file_path);
     }
 
     return 0;
@@ -427,7 +452,5 @@ inline int tmpManager::raletiveLayerNum(const char* base_path, const char* file_
 
     return nTotal + 1;
 }
-
-
 
 #endif

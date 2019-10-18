@@ -1,10 +1,12 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <string.h>
+
+#define DEBUG_DUMP
+
 #include "minilogger.h"
 #include "hTmpmanager.hpp"
 
-#define LJH_DEBUG 0
 
 
 static const struct option long_options[] = {  
@@ -13,7 +15,7 @@ static const struct option long_options[] = {
         {"ctime",  required_argument,      NULL, 'c'},                //base on file build time
         {"mtime",  required_argument,      NULL, 'm'},                //base on file change time
         {"atime",  required_argument,      NULL, 'u'},                //base on file access time
-        {"dirmtime",  required_argument,      NULL, 'M'},             //base on dir change time
+        // {"dirmtime",  required_argument,      NULL, 'M'},             //base on dir change time
         {"all",  no_argument,      NULL, 'a'},             //scan all file
         {"nodirs",  no_argument,      NULL, 'i'},               //exclude dir , not scan dir
         {"force",  no_argument,      NULL, 'f'},                //force
@@ -23,7 +25,7 @@ static const struct option long_options[] = {
         {"exclude-path",  required_argument,      NULL, 'x'},         //exclude the specified path file
         // {"exclude-pattern",  required_argument,      NULL, 'X'},      //exclude the specified pattern file
         {"file-type",  required_argument,      NULL, 'y'},            //scan the specified file-type
-        {"move-mod",  no_argument,      NULL, 'o'},                   //move file only, not delete one
+        {"move-mod",  required_argument,      NULL, 'o'},                   //move file only, not delete one
         {"exclude-user",  required_argument,      NULL, 'U'},            //exclude the specified user file
         {"max-depth",  required_argument,      NULL, 'e'},            //recursive maximum number of layers
         {NULL,     0,                NULL,  0}
@@ -32,23 +34,23 @@ static const struct option long_options[] = {
 void usage() {
     printf("Usage : \n");
     printf("\t-h  --help              :  help information\n");
-    printf("\t-d  --directory=x       :  scan the specified path file\n");
-    printf("\t-c  --ctime=x           :  base on file build time [/second]\n");
-    printf("\t-m  --mtime=x           :  base on file change time [/second]\n");
-    printf("\t-u  --atime=x           :  base on file access time [/second]\n");
-    printf("\t-M  --dirmtime=x        :  base on dir change time [/second]\n");
+    printf("\t-d  --directory x       :  scan the specified path file\n");
+    printf("\t-c  --ctime x           :  base on file build time [/second]\n");
+    printf("\t-m  --mtime x           :  base on file change time [/second]\n");
+    printf("\t-u  --atime x           :  base on file access time [/second]\n");
+    // printf("\t-M  --dirmtime=x        :  base on dir change time [/second]\n");
     printf("\t-a  --all               :  scan all file [default : all]\n");
     printf("\t-i  --nodirs            :  exclude dir , not scan dir\n");
     printf("\t-f  --force             :  force operate\n");
     printf("\t-q  --quite             :  report error message only \n");
     printf("\t-t  --test              :  test module\n");
     // printf("\t-v  --verbose           :  report full message \n");
-    printf("\t-x  --exclude-path=x    :  exclude the specified path file\n");
+    printf("\t-x  --exclude-path x    :  exclude the specified path file\n");
     //printf("\t-X: --exclude-pattern=x :  exclude the specified pattern file [Regular expression]\n");
-    printf("\t-y: --file-type=x       :  scan the specified file-type  [file-type:-|d|l|s|b|c|p]\n");
-    printf("\t-o: --move-mod          :  file only, not delete one\n");
-    printf("\t-U: --exclude-user      :  exclude the specified user file\n");
-    printf("\t-e: --max-depth=x       :  recursive maximum number of layers\n\n");
+    printf("\t-y: --file-type x       :  scan the specified file-type  [file-type:-dlsbcp]\n");
+    printf("\t-o: --move-mod x        :  file only, not delete one\n");
+    printf("\t-U: --exclude-user x    :  exclude the specified user file\n");
+    printf("\t-e: --max-depth x       :  recursive maximum number of layers\n\n");
 
 }
 
@@ -56,10 +58,10 @@ int cmdParse(int argc, char* argv[], tmpManager *tmp_manager) {
     int ret = 0;
     int opt = 0;
     int option_index = 0;
-    const char* short_options = "hd:c:m:u:M:aifqtvx:X:t:oe:";
+    const char* short_options = "hd:c:m:u:aifqtx:t:y:o:U:e:";
     
     while((opt = getopt_long(argc, argv, short_options, long_options, &option_index)) != -1 && 0 == ret) {  
-#if LJH_DEBUG
+#ifdef DEBUG_DUMP 
         printf("opt = %c\t\t", opt);
         printf("optarg = %s\t\t",optarg);
         printf("optind = %d\t\t",optind);
@@ -92,12 +94,12 @@ int cmdParse(int argc, char* argv[], tmpManager *tmp_manager) {
                     tmp_manager->setAtime(atime);
                 }
                 break;
-            case 'M':
-                {
-                    long dirmtime = atol(optarg);
-                    tmp_manager->setDirmtime(dirmtime);
-                }
-                break;
+            // case 'M':
+            //     {
+            //         long dirmtime = atol(optarg);
+            //         tmp_manager->setDirmtime(dirmtime);
+            //     }
+            //     break;
             case 'a':
                 tmp_manager->setAll();
                 break;
