@@ -2,7 +2,7 @@
 #include <getopt.h>
 #include <string.h>
 
-#define DEBUG_DUMP 0
+#define DEBUG_DUMP 1
 
 #include "minilogger.h"
 #include "hTmpmanager.hpp"
@@ -32,7 +32,7 @@ static const struct option long_options[] = {
 };
 
 void usage() {
-    printf("tmpManager    version 0.2-alpha");
+    printf("tmpManager    version 0.2-alpha\n");
     printf("Usage : \n");
     printf("\t-h  --help              :  help information\n");
     printf("\t-d  --directory x       :  scan the specified path file\n");
@@ -49,7 +49,7 @@ void usage() {
     printf("\t-x  --exclude-path x    :  exclude the specified path file\n");
     //printf("\t-X: --exclude-pattern=x :  exclude the specified pattern file [Regular expression]\n");
     printf("\t-y: --file-type x       :  scan the specified file-type  [file-type:-dlsbcp]\n");
-    printf("\t-o: --move-mod x        :  file only, not delete one\n");
+    printf("\t-o: --move-mod x        :  file only, not delete one  [default : delete]\n");
     printf("\t-U: --exclude-user x    :  exclude the specified user file\n");
     printf("\t-e: --max-depth x       :  recursive maximum number of layers\n\n");
 
@@ -145,15 +145,20 @@ int cmdParse(int argc, char* argv[], tmpManager *tmp_manager) {
 }
 
 int Run(int argc, char* argv[]) {
-
+    int ret = 0;
     if(argc < 2) {
         usage();
         return 0;
     }
 
     tmpManager *tmp_manager = new tmpManager("tmpManager");
-    cmdParse(argc, argv, tmp_manager);
-    tmp_manager->run();
+    ret = cmdParse(argc, argv, tmp_manager);
+    if (ret < 0) {
+        return -1;
+    }
+    ret = tmp_manager->run();
+
+    return ret;
 }
 
 int main(int argc, char* argv[]) {
