@@ -18,7 +18,7 @@ static const struct option long_options[] = {
         // {"dirmtime",  required_argument,      NULL, 'M'},             //base on dir change time
         {"all",  no_argument,      NULL, 'a'},             //scan all file
         {"nodirs",  no_argument,      NULL, 'i'},               //exclude dir , not scan dir
-        {"force",  no_argument,      NULL, 'f'},                //force
+        // {"force",  no_argument,      NULL, 'f'},                //force
         {"quite",  no_argument,      NULL, 'q'},                //report error message only 
         {"test",  no_argument,      NULL, 't'},                 //test
         // {"verbose",  no_argument,      NULL, 'v'},              //report full message 
@@ -32,23 +32,23 @@ static const struct option long_options[] = {
 };
 
 void usage() {
-    printf("tmpManager    version 0.2-alpha\n");
+    printf("tmpManager    version 0.3-alpha\n");
     printf("Usage : \n");
     printf("\t-h  --help              :  help information\n");
     printf("\t-d  --directory x       :  scan the specified path file\n");
-    printf("\t-c  --ctime x           :  base on file build time [/second]\n");
-    printf("\t-m  --mtime x           :  base on file change time [/second]\n");
-    printf("\t-u  --atime x           :  base on file access time [/second]\n");
+    printf("\t-c  --ctime x           :  base on file build time [1/second]\n");
+    printf("\t-m  --mtime x           :  base on file change time [1/second]\n");
+    printf("\t-u  --atime x           :  base on file access time [1/second]\n");
     // printf("\t-M  --dirmtime=x        :  base on dir change time [/second]\n");
-    printf("\t-a  --all               :  scan all file [default : all]\n");
+    printf("\t-a  --all               :  scan all file [default : none]\n");
     printf("\t-i  --nodirs            :  exclude dir , not scan dir\n");
-    printf("\t-f  --force             :  force operate\n");
-    printf("\t-q  --quite             :  report error message only \n");
+    // printf("\t-f  --force             :  force operate\n");
+    printf("\t-q  --quite             :  report error message only [default : verbose]\n");
     printf("\t-t  --test              :  test module\n");
     // printf("\t-v  --verbose           :  report full message \n");
     printf("\t-x  --exclude-path x    :  exclude the specified path file\n");
     //printf("\t-X: --exclude-pattern=x :  exclude the specified pattern file [Regular expression]\n");
-    printf("\t-y: --file-type x       :  scan the specified file-type  [file-type:-dlsbcp]\n");
+    printf("\t-y: --file-type x       :  scan the specified file-type  [file-type : -dlsbcp]\n");
     printf("\t-o: --move-mod x        :  file only, not delete one  [default : delete]\n");
     printf("\t-U: --exclude-user x    :  exclude the specified user file\n");
     printf("\t-e: --max-depth x       :  recursive maximum number of layers\n\n");
@@ -59,7 +59,7 @@ int cmdParse(int argc, char* argv[], tmpManager *tmp_manager) {
     int ret = 0;
     int opt = 0;
     int option_index = 0;
-    const char* short_options = "hd:c:m:u:aifqtx:t:y:o:U:e:";
+    const char* short_options = "hd:c:m:u:aiqtx:t:y:o:U:e:";
     
     while((opt = getopt_long(argc, argv, short_options, long_options, &option_index)) != -1 && 0 == ret) {  
 #if DEBUG_DUMP 
@@ -107,9 +107,9 @@ int cmdParse(int argc, char* argv[], tmpManager *tmp_manager) {
             case 'i':
                 tmp_manager->setNodirs();
                 break;
-            case 'f':
-                tmp_manager->setForce();
-                break;
+            // case 'f':
+            //     tmp_manager->setForce();
+            //     break;
             case 'q':
                 tmp_manager->setQuite();
                 break;

@@ -56,7 +56,7 @@ public:
 
     int setAll();
 
-    int remove_dir(const char* path);
+    int removeDir(const char* path);
 private:
     inline int handlewith(const char* file_path, const char* file_name);
 
@@ -79,8 +79,8 @@ private:
     unsigned char* file_type_ = nullptr;
     // std::string *exclude_pattern_ = nullptr;
     std::string *move_directory_ = nullptr;
-    std::vector<const char*> *exclude_uers_ = nullptr;
-    std::vector<const char*> *sub_dir_stack_;
+    std::vector<std::string> *exclude_uers_ = nullptr;
+    std::vector<std::string> *sub_dir_stack_;
 
     long ctime_ = 0;
     long atime_ = 0;
@@ -88,7 +88,7 @@ private:
     int max_depth_ = 0;
 
     bool nodirs_ = false;
-    bool force_ = false;
+    // bool force_ = false;
     bool test_ = false;
     bool all_ = false;
 };
@@ -98,7 +98,7 @@ private:
 
 tmpManager::tmpManager(const char* name) {
     // transferred_files_ = new std::vector<std::string*>;
-    sub_dir_stack_ = new std::vector<const char*>;
+    sub_dir_stack_ = new std::vector<std::string>;
     sub_dir_stack_->clear();
     logger_ = MiniLog::GetLog(name, MiniLog::log_level_info);
     logger_->info("begin scan file");
@@ -154,7 +154,7 @@ inline void tmpManager::dump() {
     logger_->debug("mtime_ = [{}]", mtime_);
     logger_->debug("max_depth_ = [{}]", max_depth_);
     logger_->debug("nodirs_ = [{}]", nodirs_);
-    logger_->debug("force_ = [{}]", force_);
+    // logger_->debug("force_ = [{}]", force_);
     logger_->debug("test_ = [{}]", test_);
     logger_->debug("all_ = [{}]", all_);
     if(exclude_path_)
@@ -241,58 +241,75 @@ int tmpManager::run() {
         }
         closedir(dir);
     } 
+
+    return ret;
 }
 
-
-int tmpManager::remove_dir(const char* path) {
+int tmpManager::removeDir(const char* path) {
     int ret = 0;
     // 参数传递进来的目录不存在，直接返回
 	if ( 0 != access(path, F_OK) ) {
 		return -1;
 	}
 
-    std::vector<const char*> *remove_dir_paths = new std::vector<const char*>;
-    remove_dir_paths->emplace_back(path);
+    std::vector<std::string> *removeDir_paths = new std::vector<std::string>;
+    std::vector<std::string> *removeDir_stacks = new std::vector<std::string>;
+    removeDir_paths->emplace_back(path);
 
-    while(!remove_dir_paths->empty()) {
-        char dir_name[128] = {0};
+    while(!removeDir_paths->empty()) {
         DIR *dir = NULL;
         struct dirent *dirptr = NULL;
-        struct stat dir_stat;
-        std::string basepath(remove_dir_paths->back());
-        remove_dir_paths->pop_back();
-
-        // 获取目录属性失败，返回错误
-        // if ( 0 > lstat(basepath.c_str(), &dir_stat) ) {
-        //     logger_->error("get directory stat error : [{}], error : [{}]", basepath, strerror(errno));
-        //     ret = -1;
-        //     continue;
-        // }
+        std::string basepath = removeDir_paths->back();
+        removeDir_stacks->emplace_back(basepath);
+        removeDir_paths->pop_back();
 
         if ((dir = opendir(basepath.c_str())) == NULL) {
             logger_->error("failed to open file : [{}], error : [{}]", basepath, strerror(errno));
+            ret = -1;
             continue;
         }
-        
 
         //paichu zhiding wenjian leixing 
         //chdir()   "cd"
         while ((dirptr = readdir(dir)) != NULL) {
+            if(0 == strcmp(dirptr->d_name, ".") ||
+                0 == strcmp(dirptr->d_name, "..")) {
+                continue;
+            }
             std::string file_path(basepath);
-            assemblyFullpath(file_path.c_str(), dirptr->d_name);
+            file_path = assemblyFullpath(file_path.c_str(), dirptr->d_name);
 
             if (dirptr->d_type == DT_DIR ) {
-                remove_dir_paths->emplace_back(file_path.c_str());
+                removeDir_paths->emplace_back(file_path);
             } else {
                 if(remove(file_path.c_str()) < 0) {
                     logger_->error("Failed to delete files : [{}], error : [{}]", file_path, strerror(errno));
+                    ret = -1;
                 }
+                logger_->debug("Successfully deleted the file : [{}]", file_path);
             }
         }
         closedir(dir);
-        if(rmdir(path)) {	// 删除空目录
+    }
 
-        }
+    while(!removeDir_stacks->empty()) {
+        std::string& path = removeDir_stacks->back();
+        if(rmdir(path.c_str()) < 0) {	// 删除空目录
+            logger_->error("Failed to delete files : [{}], error : [{}]", path, strerror(errno));
+            ret = -1;
+        }   
+        logger_->debug("Successfully deleted the file : [{}]", path);
+        removeDir_stacks->pop_back();
+    }
+
+    if(removeDir_stacks) {
+        delete removeDir_stacks;
+        removeDir_stacks = nullptr;
+    }
+
+    if(removeDir_paths) {
+        delete removeDir_paths;
+        removeDir_paths = nullptr;
     }
 
 	return 0;
@@ -335,7 +352,7 @@ void tmpManager::setExcludePath(const char* exclude_path) {
 
 void tmpManager::setExcludeusers(const char* exclude_user) {
     if(exclude_uers_ == nullptr) {
-        exclude_uers_ = new std::vector<const char*>;
+        exclude_uers_ = new std::vector<std::string>;
     }
 
     exclude_uers_->emplace_back(exclude_user);
@@ -407,9 +424,9 @@ void tmpManager::setMoveDirectory(const char* move_directory) {
     customPathFormat(*move_directory_);
 }
 
-void tmpManager::setForce() {
-    force_ = true;
-}
+// void tmpManager::setForce() {
+//     force_ = true;
+// }
 
 int tmpManager::setAll() {
     if(file_type_ != nullptr) {
@@ -453,13 +470,7 @@ inline int tmpManager::handlewith(const char* file_path, const char* file_name) 
         }
         logger_->info("Successfully moveing file : [{}] -> [{}]", file_path, new_file);
     } else {
-        std::string cmd("rm -r ");
-        if(force_) {
-            cmd.append("-f ");
-        }
-        cmd.append(file_path);
-        if(!test_ && system(cmd.c_str())) {
-            logger_->error("Failed to delete files : [{}], error : [{}]", file_path, strerror(errno));
+        if(!test_ && removeDir(file_path)) {
             return -1;
         }
         logger_->info("Successfully deleted file : [{}]", file_path);

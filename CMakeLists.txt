@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 project(tmpmanager)
 
-SET(CMAKE_CXX_STANDARD 11)
+SET(CMAKE_CXX_STANDARD 14)
 
 include_directories(third/minilogger)
 include_directories(src)
